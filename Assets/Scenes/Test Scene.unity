@@ -167,8 +167,8 @@ MonoBehaviour:
   options:
     size: 256
     seed: 1
-    terraces: 64
-    dispersion: 32
+    terraces: 32
+    dispersion: 16
   biome: {fileID: 11400000, guid: 7ddbece49ba4a9f4c8f8c80cb04f54af, type: 2}
   material: {fileID: 2100000, guid: 2a8301767ca43134f942efe8b3647dee, type: 2}
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
@@ -278,7 +278,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66ddaa9cc54b92e4b8560a843d255b2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minZoom: 4
-  maxZoom: 16
+  minZoom: 3
+  maxZoom: 24
   zoomSpeedFactor: 2
+  dragSpeedFactor: 0.08
   speedUp: 3

@@ -13,6 +13,7 @@ public static class InputManager
     public static InputAction scroll;
     public static InputAction cursor;
     public static InputAction speedup;
+    public static InputAction click;
 
     public static void Init(InputActionAsset config)
     {
@@ -30,6 +31,7 @@ public static class InputManager
         scroll = gameplay.FindAction("scroll");
         cursor = gameplay.FindAction("cursor");
         speedup = gameplay.FindAction("speedup");
+        click = gameplay.FindAction("click");
     }
     public static void SaveRebinds()
     {

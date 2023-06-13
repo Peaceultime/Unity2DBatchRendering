@@ -14,35 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   noisers:
   - noise_type: 0
-    noise_shape: 0
-    active: 1
-    octaves: 2
-    amplitude: 1.5
-    frequency: 0.0346
-    roughness: -0.275
-    weight: 0
-    addition: 1.1
-    multiply: 0.55
-  - noise_type: 0
     noise_shape: 1
     active: 1
-    octaves: 2
-    amplitude: 0.67
-    frequency: 0.002303
-    roughness: 1
-    weight: 0.3
-    addition: 0.22
-    multiply: -1.76
+    amplitude: -0.85
+    frequency: 0.003901
+    addition: 0.88
   - noise_type: 1
     noise_shape: 0
     active: 1
-    octaves: 2
-    amplitude: 0.6
-    frequency: 0.9
-    roughness: 0.1
-    weight: 0.1
-    addition: 0.05
-    multiply: 0.1
+    amplitude: -0.4
+    frequency: 0.0656
+    addition: 0.08
   tiles:
   - {fileID: 11400000, guid: 27a9c938171afc44d9b16e7087d0859b, type: 2}
   - {fileID: 11400000, guid: d547e46a467cbe5498fe3b6fe3a28768, type: 2}

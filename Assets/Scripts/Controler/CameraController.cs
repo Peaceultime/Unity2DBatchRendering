@@ -12,14 +12,20 @@ public class CameraController : MonoBehaviour
     [Range(6f, 24f)]
     public float maxZoom;
     public float zoomSpeedFactor = 3f;
+    public float dragSpeedFactor = 0.3f;
 
     [Range(2f, 6f)]
     public float speedUp = 3f;
+
+    private bool isDragging = false;
+    private Vector2 lastCursorPosition;
 
     void Start()
     {
         cam = GetComponent<Camera>();
         cam.orthographicSize = math.lerp(minZoom, maxZoom, zoom);
+
+        isDragging = false;
     }
     void Update()
     {
@@ -37,6 +43,30 @@ public class CameraController : MonoBehaviour
             pos.x += vel.x;
             pos.y += vel.y;
             transform.position = pos;
+        }
+
+        if(InputManager.click != null && InputManager.click.IsInProgress())
+        {
+            if(!isDragging)
+            {
+                isDragging = true;
+                lastCursorPosition = InputManager.cursor.ReadValue<Vector2>();
+            }
+            else
+            {
+                Vector2 vel = InputManager.cursor.ReadValue<Vector2>();
+                Vector3 pos = transform.position;
+                pos.x -= (vel.x - lastCursorPosition.x) * dragSpeedFactor;
+                pos.y -= (vel.y - lastCursorPosition.y) * dragSpeedFactor;
+                transform.position = pos;
+
+                lastCursorPosition = vel;
+            }
+        }
+
+        if(isDragging && InputManager.click != null && !InputManager.click.IsInProgress())
+        {
+            isDragging = false;
         }
     }
 }

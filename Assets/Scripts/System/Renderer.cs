@@ -68,8 +68,6 @@ public static class Renderer
         indexBuffer?.Dispose();
         uvBuffer?.Dispose();
 
-        for (int i = 0; i < spritesheets.Length; i++)
-            spritesheets[i].Clear();
         spritesheetCount = 0;
 
         commandBuffer = null;

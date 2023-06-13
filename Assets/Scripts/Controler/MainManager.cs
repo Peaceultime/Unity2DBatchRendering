@@ -1,5 +1,8 @@
+using System.Collections;
+using TMPro;
 using Unity.Collections;
 using Unity.Mathematics;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,16 +16,14 @@ public class MainManager : MonoBehaviour
 
     public InputActionAsset inputConfig;
 
+    private int oldSize;
+
 #if UNITY_EDITOR
     [HideInInspector] private bool initialized;
 #endif
     
     public void OnEnable()
     {
-        Application.targetFrameRate = -1;
-        QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
-        QualitySettings.vSyncCount = 0;
-
         try
         {
             InputManager.Init(inputConfig);
@@ -37,12 +38,28 @@ public class MainManager : MonoBehaviour
         biome.manager = this;
 #endif
 
+        oldSize = options.size;
         options.biome = biome;
         MapManager.CreateMap(options, material, ref biome.atlases);
 
 #if UNITY_EDITOR
         initialized = true;
 #endif
+
+        //StartCoroutine(RegenTest());
+    }
+
+    public IEnumerator RegenTest()
+    {
+        while (true)
+        {
+            var noiser = options.biome.noisers[0];
+            noiser.frequency += 0.0000005f;
+            options.biome.noisers[0] = noiser;
+            MapManager.UpdateMap(options);
+
+            yield return new WaitForSecondsRealtime(0.05f);
+        }
     }
 
     public void LateUpdate()
@@ -73,8 +90,17 @@ public class MainManager : MonoBehaviour
     {
         if (Application.isPlaying && initialized)
         {
-            OnDisable();
-            OnEnable();
+            if(oldSize != options.size)
+            {
+                oldSize = options.size;
+                OnDisable();
+                OnEnable();
+            }
+            else
+            {
+                options.biome = biome;
+                MapManager.UpdateMap(options);
+            }
         }
     }
 #endif

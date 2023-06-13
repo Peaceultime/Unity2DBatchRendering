@@ -23,4 +23,12 @@ public static class MapManager
         MapGenerator.RenderMap(options, mat, atlases);
 #endif
     }
+    public static void UpdateMap(MapOptions options)
+    {
+        Stopwatch watch = new Stopwatch();
+        watch.Start();
+        MapGenerator.RegenerateMap(options);
+        watch.Stop();
+        Debug.Log(string.Format("Regenerating {0} hexes in {1}ms", options.capacity, watch.ElapsedMilliseconds));
+    }
 }

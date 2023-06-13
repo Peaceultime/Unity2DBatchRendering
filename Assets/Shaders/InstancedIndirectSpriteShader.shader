@@ -32,11 +32,8 @@ Shader "Custom/Sprite/Indirect Instanced"
             struct Sprite
             {
                 float2 position;
-                /*float opacity;*/
-                float rotation;
                 int index;
-                /*float2 scale;
-                float dummy;*/
+                float rotation;
             };
 
             StructuredBuffer<Sprite> _SpriteBlock;

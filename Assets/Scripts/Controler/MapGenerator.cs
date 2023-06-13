@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
@@ -26,9 +27,12 @@ public static class MapGenerator
     public const int GRANULARITY = 32;
     public const int CHUNK_MAX = 1024;
 
+    public const float TERRACES_HEIGHT = 5f;
+
     public static NativeArray<Hex> hices;
     public static NativeArray<Sprite> sprites;
 
+    public static List<Spritesheet> spritesheets = new List<Spritesheet>();
 
     public static void GenerateMap(MapOptions options)
     {
@@ -50,6 +54,38 @@ public static class MapGenerator
         };
         reachJob.ScheduleByRef(handle).Complete();
         hices = reachJob.hices;
+    }
+    public static void RegenerateMap(MapOptions options)
+    {
+        Random random = new Random(options.seed);
+
+        UpdateHexJob hexJob = new UpdateHexJob
+        {
+            options = options,
+            random = random,
+            randomness = random.NextFloat2(1 << 20),
+            hices = hices,
+        };
+        JobHandle handle = hexJob.ScheduleByRef(options.capacity, GRANULARITY);
+
+        for(int i = 0; i < spritesheets.Count; i++)
+        {
+            SpriteJob spriteJob = new SpriteJob
+            {
+                hices = hexJob.hices,
+                layer = (Layer)spritesheets[i].layer,
+                sprites = sprites.Slice(i * options.capacity, options.capacity),
+                resolution = spritesheets[i].resolution,
+            };
+
+            handle = spriteJob.ScheduleByRef(options.capacity, GRANULARITY, handle);
+        }
+
+        handle.Complete();
+
+        hices = hexJob.hices;
+        spritesheets[0].SetSprites(sprites.Slice(0, options.capacity));
+        spritesheets[1].SetSprites(sprites.Slice(options.capacity, options.capacity));
     }
     public static void RenderMap(MapOptions options, Material material, Texture2DArray[] atlases)
     {
@@ -90,13 +126,23 @@ public static class MapGenerator
         spritesheet.SetSprites(spriteJob.sprites);
         Renderer.AddSpritesheet(spritesheet, count);
 
+        spritesheets.Add(spritesheet);
+
         //chunkJob.bounds.Dispose();
+    }
+    public static void ClearMap()
+    {
+        hices.Dispose();
+        sprites.Dispose();
+
+        for (int i = 0; i < spritesheets.Count; i++)
+            spritesheets[i].Clear();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float2 GetPosFromCoord(int q, int r, float h, int resolution)
     {
-        return new float2((q + (r / 2f)) * ((resolution -1f) / resolution), (r) * (1f / 2 * (3f / 4)) + (h * 7.5f) - 1.5f) * ((resolution -1f) / resolution);
+        return new float2((q + (r / 2f)) * ((resolution -1f) / resolution), (r) * (1f / 2 * (3f / 4)) + (h * TERRACES_HEIGHT) - 1.5f) * ((resolution -1f) / resolution);
     }
 
     [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true, FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low, OptimizeFor = OptimizeFor.Performance)]
@@ -138,17 +184,13 @@ public static class MapGenerator
             float2 pos = GetPosFromCoord(hex.q, hex.r, hex.h, resolution);
 
             Sprite sprite = sprites[i];
-            sprite.pos = pos; //float2: 8 bytes (8)
+            sprite.pos = pos;
             if (hex.reachable)
-                sprite.index = layer == Layer.DECO ? hex.tile.decoSprite : hex.tile.baseSprite; //float: 4 bytes (12)
+                sprite.index = layer == Layer.DECO ? hex.tile.decoSprite : hex.tile.baseSprite;
             else
                 sprite.index = -1;
-            //sprite.opacity = 1; //4 bytes (16)
-                                //Could add new properties to the sprite struct ?
-            //sprite.scale.x = 1; //4 bytes (20)
-            //sprite.scale.y = 1; //4 bytes (24)
-            sprite.rotation = 0; //4 bytes (28)
-                                 //4 bytes remaining for 32 bytes component optimization on GPU
+
+            sprite.opacity = 1;
             sprites[i] = sprite;
         }
     }
@@ -195,11 +237,6 @@ public static class MapGenerator
             visited.Dispose();
         }
     }
-    public static void ClearMap()
-    {
-        hices.Dispose();
-        sprites.Dispose();
-    }
 
     [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true, FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low, OptimizeFor = OptimizeFor.Performance)]
     private struct HexJob : IJobParallelFor
@@ -237,7 +274,7 @@ public static class MapGenerator
                     explored = false,
                     visible = false,
                     tile = options.biome.tiles[options.biome.diffusionMap[h * options.biome.width + m]],
-                    reachable = false,
+                    reachable = true,
                 };
             }
             else
@@ -262,7 +299,7 @@ public static class MapGenerator
             int count = 0;
             for (int i = 0; i < options.biome.noisers.Length; ++i)
             {
-                if (options.biome.noisers[i].active != 0)
+                if (options.biome.noisers[i].active)
                 {
                     Noiser noiser = options.biome.noisers[i];
                     height += compute_noise(ref noiser, new float3(q, r, randomness.x));
@@ -270,7 +307,87 @@ public static class MapGenerator
                     count++;
                 }
             }
-            return new float2(math.clamp(height / count, 0, 0.9999999f), math.clamp(moisture / count, 0, 0.9999999f));
+            return new float2(math.clamp(height, 0, 1), math.clamp(moisture, 0, 1));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float classic_noise(ref Noiser noiser, float3 pos)
+        {
+            return noiser.noise_type == Noiser.NoiseType.PERLIN ? noise.cnoise(pos) : noise.snoise(pos);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float ridgid_noise(ref Noiser noiser, float3 pos)
+        {
+            return 1f - math.abs(classic_noise(ref noiser, pos));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float compute_noise(ref Noiser noiser, float3 pos)
+        {
+            float value = 0;
+            switch (noiser.noise_shape)
+            {
+                case Noiser.NoiseShape.CLASSIC:
+                    value = (classic_noise(ref noiser, noiser.frequency * pos) + 1) * 0.5f * noiser.amplitude;
+                    break;
+                case Noiser.NoiseShape.RIDGID:
+                    float v = ridgid_noise(ref noiser, noiser.frequency * pos);
+                    v *= v;
+                    value = v * noiser.amplitude;
+                    break;
+            }
+            return value + noiser.addition;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true, FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low, OptimizeFor = OptimizeFor.Performance)]
+    private struct UpdateHexJob : IJobParallelFor
+    {
+        [ReadOnly] public float2 randomness;
+        [ReadOnly] public Random random;
+        [ReadOnly] public MapOptions options;
+
+        [WriteOnly] public NativeArray<Hex> hices;
+
+        public void Execute(int index)
+        {
+            Hex hex = hices[index];
+
+            var dummy = random.NextFloat();
+
+            if (hex.tile.baseSprite == Tile.Null.baseSprite && hex.tile.decoSprite == Tile.Null.decoSprite)
+                return;
+
+            float2 noise = get_noise(hex.q, hex.r);
+
+            int h = (int)math.floor(noise.y * options.biome.height),
+                m = (int)math.floor(noise.x * options.biome.width);
+
+
+            hex.tile = options.biome.tiles[options.biome.diffusionMap[h * options.biome.width + m]];
+            hex.h = options.terraces == 0 ? noise.y : math.round(noise.y * options.terraces) / options.terraces;
+            hex.m = noise.x;
+
+            hices[index] = hex;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private float2 get_noise(int q, int r)
+        {
+            float height = 0, moisture = 0;
+            int count = 0;
+            for (int i = 0; i < options.biome.noisers.Length; ++i)
+            {
+                if (options.biome.noisers[i].active)
+                {
+                    Noiser noiser = options.biome.noisers[i];
+                    height += compute_noise(ref noiser, new float3(q, r, randomness.x));
+                    moisture += compute_noise(ref noiser, new float3(q, r, randomness.y));
+                    count++;
+                }
+            }
+            return new float2(math.clamp(height, 0, 1), math.clamp(moisture, 0, 1));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -289,35 +406,18 @@ public static class MapGenerator
         public float compute_noise(ref Noiser noiser, float3 pos)
         {
             float value = 0;
-            float amplitude = 1;
-            float frequency = noiser.frequency;
             switch (noiser.noise_shape)
             {
                 case Noiser.NoiseShape.CLASSIC:
-                    for (uint i = 0; i < noiser.octaves; ++i)
-                    {
-                        value += (classic_noise(ref noiser, frequency * pos) + 1) * 0.5f * amplitude;
-
-                        frequency *= noiser.roughness;
-                        amplitude *= noiser.amplitude;
-                    }
+                    value = (classic_noise(ref noiser, noiser.frequency * pos) + 1) * 0.5f * noiser.amplitude;
                     break;
                 case Noiser.NoiseShape.RIDGID:
-                    float weight = 1;
-                    for (uint i = 0; i < noiser.octaves; ++i)
-                    {
-                        float v = ridgid_noise(ref noiser, frequency * pos);
-                        v *= v;
-                        v *= weight;
-                        weight = math.clamp(v * noiser.weight, 0, 1);
-                        value += v * amplitude;
-
-                        frequency *= noiser.roughness;
-                        amplitude *= noiser.amplitude;
-                    }
+                    float v = ridgid_noise(ref noiser, noiser.frequency * pos);
+                    v *= v;
+                    value = v * noiser.amplitude;
                     break;
             }
-            return value * noiser.multiply + noiser.addition;
+            return value + noiser.addition;
         }
     }
 }
