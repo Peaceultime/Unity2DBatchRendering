@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e874e51d3aa7da141be6bc576ee12f75, type: 3}
+  m_Name: Biome 2
+  m_EditorClassIdentifier: 
+  noisers:
+  - noise_type: 0
+    noise_shape: 0
+    active: 1
+    octaves: 2
+    amplitude: 1.5
+    frequency: 0.0346
+    roughness: -0.275
+    weight: 0
+    addition: 1.1
+    multiply: 0.55
+  - noise_type: 0
+    noise_shape: 1
+    active: 1
+    octaves: 2
+    amplitude: 0.67
+    frequency: 0.002303
+    roughness: 1
+    weight: 0.3
+    addition: 0.22
+    multiply: -1.76
+  - noise_type: 1
+    noise_shape: 0
+    active: 1
+    octaves: 2
+    amplitude: 0.6
+    frequency: 0.9
+    roughness: 0.1
+    weight: 0.1
+    addition: 0.05
+    multiply: 0.1
+  tiles:
+  - {fileID: 11400000, guid: 27a9c938171afc44d9b16e7087d0859b, type: 2}
+  - {fileID: 11400000, guid: d547e46a467cbe5498fe3b6fe3a28768, type: 2}
+  - {fileID: 11400000, guid: 382d3774408f3ef4aa7dbd9910436bf2, type: 2}
+  - {fileID: 11400000, guid: 4eb1318a6459b1f4188204f24a5f780b, type: 2}
+  - {fileID: 11400000, guid: 720cf7759a6cc9543881a748018da40d, type: 2}
+  diffusionMap: {fileID: 2800000, guid: 56dcdf8a026597d4a848727a0f9ae2ee, type: 3}
+  atlases:
+  - {fileID: 18700000, guid: 6bd49cc5e3a27a4468f5262ed4c5d49f, type: 2}
+  - {fileID: 18700000, guid: a2ceecef6806806439aa9b39e6780632, type: 2}
+  - {fileID: 18700000, guid: 6bd49cc5e3a27a4468f5262ed4c5d49f, type: 2}
+  manager: {fileID: 0}
