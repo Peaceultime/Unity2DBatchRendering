@@ -17,6 +17,7 @@ public class MainManager : MonoBehaviour
     public InputActionAsset inputConfig;
 
     private int oldSize;
+    private int oldDispersion;
 
 #if UNITY_EDITOR
     [HideInInspector] private bool initialized;
@@ -31,7 +32,6 @@ public class MainManager : MonoBehaviour
         }
         catch { }
 
-        //SpriteRenderer.Setup();
         Renderer.Init(mesh, material);
 
 #if UNITY_EDITOR
@@ -39,32 +39,18 @@ public class MainManager : MonoBehaviour
 #endif
 
         oldSize = options.size;
+        oldDispersion = options.dispersion;
+
         options.biome = biome;
         MapManager.CreateMap(options, material, ref biome.atlases);
 
 #if UNITY_EDITOR
         initialized = true;
 #endif
-
-        //StartCoroutine(RegenTest());
-    }
-
-    public IEnumerator RegenTest()
-    {
-        while (true)
-        {
-            var noiser = options.biome.noisers[0];
-            noiser.frequency += 0.0000005f;
-            options.biome.noisers[0] = noiser;
-            MapManager.UpdateMap(options);
-
-            yield return new WaitForSecondsRealtime(0.05f);
-        }
     }
 
     public void LateUpdate()
     {
-        //SpriteRenderer.RenderStaticChunks();
         Renderer.Render();
     }
 
@@ -80,7 +66,6 @@ public class MainManager : MonoBehaviour
             options.biome.tiles.Dispose();
         } catch(System.Exception e) { Debug.LogException(e); }
 
-        //SpriteRenderer.Dispose();
         Renderer.Dispose();
         MapGenerator.ClearMap();
     }
@@ -90,9 +75,8 @@ public class MainManager : MonoBehaviour
     {
         if (Application.isPlaying && initialized)
         {
-            if(oldSize != options.size)
+            if(oldSize != options.size || oldDispersion != options.dispersion)
             {
-                oldSize = options.size;
                 OnDisable();
                 OnEnable();
             }
@@ -101,6 +85,8 @@ public class MainManager : MonoBehaviour
                 options.biome = biome;
                 MapManager.UpdateMap(options);
             }
+            oldSize = options.size;
+            oldDispersion = options.dispersion;
         }
     }
 #endif

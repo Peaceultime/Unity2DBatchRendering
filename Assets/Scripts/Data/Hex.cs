@@ -13,7 +13,8 @@ public struct Hex
     public float h, m;
     public Tile tile;
 
-    public bool reachable, visible, explored;
+    public bool reached, reachable, visible, explored;
+    public int village;
 
 #if UNITY_EDITOR
     public override string ToString()
@@ -102,10 +103,25 @@ public struct Hex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int DistanceFromCenter(int q, int r)
     {
-        if (q == 0 && r == 0) return 0;
-        if (q > 0 && r >= 0) return q + r;
-        if (q <= 0 && r > 0) return (-q < r) ? r : -q;
-        if (q < 0) return -q - r;
-        return (-r > q) ? -r : q;
+        return Distance(q, r, 0, 0);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Distance(int q, int r, int q2, int r2)
+    {
+        int tmp_q = q - q2, tmp_r = r - r2;
+        return (math.abs(tmp_q) + math.abs(tmp_q + tmp_r) + math.abs(tmp_r)) / 2;
     }
 }
+
+/*
+ 
+function axial_subtract(a, b):
+    return Hex(a.q - b.q, a.r - b.r)
+
+function axial_distance(a, b):
+    var vec = axial_subtract(a, b)
+    return (abs(vec.q)
+          + abs(vec.q + vec.r)
+          + abs(vec.r)) / 2
+ 
+ */

@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
-using Unity.Collections;
 
 public static class MapManager
 {

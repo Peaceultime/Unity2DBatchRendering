@@ -5,13 +5,6 @@ public struct Tile
 
 	public int baseSprite; //Index in texture array.
 	public int decoSprite; //If there is no deco, this index must be = -1.
+	public bool acceptStructures;
+	public int propagationCostMultiplier;
 }
-/*public struct Tileset
-{
-	public Tile[] tiles;
-}
-public struct Tilemap
-{
-	public Tileset[] tiles;
-	public 
-}*/

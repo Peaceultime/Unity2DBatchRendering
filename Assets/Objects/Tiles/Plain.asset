@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654531a26a05b8945a82533f09457b80, type: 3}
   m_Name: Plain
   m_EditorClassIdentifier: 
-  color: {r: 0.6, g: 0.8980393, b: 0.3137255, a: 1}
   spriteIndex: 3
   decoSpriteIndex: -1
+  acceptStructures: 1

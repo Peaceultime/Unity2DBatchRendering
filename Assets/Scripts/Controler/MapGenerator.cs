@@ -31,6 +31,7 @@ public static class MapGenerator
 
     public static NativeArray<Hex> hices;
     public static NativeArray<Sprite> sprites;
+    public static NativeList<Village> villages;
 
     public static List<Spritesheet> spritesheets = new List<Spritesheet>();
 
@@ -47,13 +48,26 @@ public static class MapGenerator
         };
         JobHandle handle = hexJob.ScheduleByRef(options.capacity, GRANULARITY);
 
+        StructureJob structureJob = new StructureJob
+        {
+            random = random,
+            size = options.size,
+            hices = hexJob.hices,
+            capacity = options.capacity,
+            villages = new NativeList<Village>(Allocator.Persistent),
+            villageAmount = options.size / 100,
+        };
+        handle = structureJob.ScheduleByRef(handle);
+
         CheckReachJob reachJob = new CheckReachJob
         {
             size = options.size,
-            hices = hexJob.hices,
+            hices = structureJob.hices,
         };
+
         reachJob.ScheduleByRef(handle).Complete();
         hices = reachJob.hices;
+        villages = structureJob.villages;
     }
     public static void RegenerateMap(MapOptions options)
     {
@@ -68,11 +82,22 @@ public static class MapGenerator
         };
         JobHandle handle = hexJob.ScheduleByRef(options.capacity, GRANULARITY);
 
-        for(int i = 0; i < spritesheets.Count; i++)
+        StructureJob structureJob = new StructureJob
+        {
+            random = random,
+            size = options.size,
+            hices = hexJob.hices,
+            capacity = options.capacity,
+            villages = villages,
+            villageAmount = options.size / 64,
+        };
+        handle = structureJob.ScheduleByRef(handle);
+
+        for (int i = 0; i < spritesheets.Count; i++)
         {
             SpriteJob spriteJob = new SpriteJob
             {
-                hices = hexJob.hices,
+                hices = structureJob.hices,
                 layer = (Layer)spritesheets[i].layer,
                 sprites = sprites.Slice(i * options.capacity, options.capacity),
                 resolution = spritesheets[i].resolution,
@@ -110,30 +135,17 @@ public static class MapGenerator
 
         JobHandle handle = spriteJob.ScheduleByRef(count, GRANULARITY);
 
-        /*ChunkJob chunkJob = new ChunkJob
-        {
-            sprites = spriteJob.sprites,
-            bounds = new NativeArray<AABB>(count / CHUNK_MAX + 1, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
-        };*/
-
-        //chunkJob.ScheduleByRef(count / CHUNK_MAX + 1, handle).Complete();
-
-        /*for(int i = 0; i < chunkJob.bounds.Length; i++)
-        {
-            SpriteRenderer.AddChunk(ref spritesheet, chunkJob.sprites.Slice(i, math.clamp(CHUNK_MAX, 0, count - i * CHUNK_MAX)), chunkJob.bounds[i]);
-        }*/
         handle.Complete();
         spritesheet.SetSprites(spriteJob.sprites);
         Renderer.AddSpritesheet(spritesheet, count);
 
         spritesheets.Add(spritesheet);
-
-        //chunkJob.bounds.Dispose();
     }
     public static void ClearMap()
     {
         hices.Dispose();
         sprites.Dispose();
+        villages.Dispose();
 
         for (int i = 0; i < spritesheets.Count; i++)
             spritesheets[i].Clear();
@@ -205,10 +217,8 @@ public static class MapGenerator
         public void Execute()
         {
             NativeQueue<int> queue = new NativeQueue<int>(Allocator.Temp);
-            NativeHashSet<int> visited = new NativeHashSet<int>(hices.Length, Allocator.Temp);
             int start = Hex.GetIndexFromCoord(0, 0, size);
             queue.Enqueue(start);
-            visited.Add(start);
 
             do
             {
@@ -219,14 +229,15 @@ public static class MapGenerator
                 for (int i = 0; i < 6; i++)
                 {
                     int neighbor = Hex.GetNeighborOffset(index, i, size);
-                    if (neighbor != -1 && !visited.Contains(neighbor))
+                    if (neighbor != -1)
                     {
                         Hex neighborHex = hices[neighbor];
-
-                        if (neighborHex.initialized)
+                        if (!neighborHex.reached && neighborHex.initialized)
                         {
+                            neighborHex.reached = true;
+                            hices[neighbor] = neighborHex;
+
                             queue.Enqueue(neighbor);
-                            visited.Add(neighbor);
                         }
                     }
                 }
@@ -234,7 +245,6 @@ public static class MapGenerator
             } while (queue.Count > 0);
 
             queue.Dispose();
-            visited.Dispose();
         }
     }
 
@@ -271,23 +281,16 @@ public static class MapGenerator
                     r = r, //Coordinate R
                     h = options.terraces == 0 ? noise.y : math.round(noise.y * options.terraces) / options.terraces, //Height
                     m = noise.x, //Moisture
-                    explored = false,
-                    visible = false,
                     tile = options.biome.tiles[options.biome.diffusionMap[h * options.biome.width + m]],
-                    reachable = true,
                 };
             }
             else
             {
                 hices[index] = new Hex
                 {
-                    initialized = false,
                     q = q, //Coordinate Q
                     r = r, //Coordinate R
-                    explored = false,
-                    visible = false,
                     tile = Tile.Null,
-                    reachable = false,
                 };
             }
         }
@@ -356,7 +359,7 @@ public static class MapGenerator
 
             var dummy = random.NextFloat();
 
-            if (hex.tile.baseSprite == Tile.Null.baseSprite && hex.tile.decoSprite == Tile.Null.decoSprite)
+            if (!hex.reachable)
                 return;
 
             float2 noise = get_noise(hex.q, hex.r);
@@ -418,6 +421,110 @@ public static class MapGenerator
                     break;
             }
             return value + noiser.addition;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true, FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low, OptimizeFor = OptimizeFor.Performance)]
+    private struct StructureJob : IJob
+    {
+        [ReadOnly] public Random random;
+        [ReadOnly] public int capacity;
+        [ReadOnly] public int size;
+        [ReadOnly] public int villageAmount;
+
+        public NativeList<Village> villages;
+        public NativeArray<Hex> hices;
+
+        private int currentVillageAmount;
+
+        public void Execute()
+        {
+            for(currentVillageAmount = 0; currentVillageAmount < villageAmount; currentVillageAmount++)
+            {
+                villages.Add(SpawnVillage());
+            }
+        }
+
+        private Village SpawnVillage()
+        {
+            NativeQueue<int> queue = new NativeQueue<int>(Allocator.Temp);
+            NativeHashMap<int, int> visited = new NativeHashMap<int, int>(200, Allocator.Temp); //First int is the index, second int is the propagation score
+            int start;
+
+            do
+            {
+                queue.Clear();
+                visited.Clear();
+                start = PickRandomHex();
+
+                if (start == -1)
+                    return default;
+
+                int budget = random.NextInt(27, 56);
+                queue.Enqueue(start);
+                visited.Add(start, budget);
+
+                do
+                {
+                    int index = queue.Dequeue();
+                    Hex hex = hices[index];
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        int neighbor = Hex.GetNeighborOffset(index, i, size);
+                        Hex neighborHex = hices[neighbor];
+
+                        if (neighbor != -1 && !visited.ContainsKey(neighbor) && neighborHex.initialized && neighborHex.tile.acceptStructures)
+                        {
+                            float heightDifference = 1 + (neighborHex.h - hex.h);
+                            int propagation = (int) math.round(heightDifference * visited[index] - random.NextInt(3, 11) * neighborHex.tile.propagationCostMultiplier);
+
+                            if(propagation > 0)
+                            {
+                                queue.Enqueue(neighbor);
+                                visited.Add(neighbor, propagation);
+                            }
+                        }
+                    }
+                    hices[index] = hex;
+                } while (queue.Count > 0);
+            } while (visited.Count() < 12);
+
+            NativeArray<int> villageHices = visited.GetKeyArray(Allocator.Temp);
+            Village village = new Village
+            {
+                origin = hices[start],
+            };
+
+            foreach (int index in villageHices)
+            {
+                Hex hex = hices[index];
+                hex.tile = Tile.Null; //Tile.Village
+                hex.village = currentVillageAmount;
+                hices[index] = hex;
+            }
+
+            queue.Dispose();
+            visited.Dispose();
+            villageHices.Dispose();
+
+            return village;
+        }
+        private int PickRandomHex()
+        {
+            Hex hex = default;
+            int pos = 0, distance = 0, villageDistance = size, tries = 0;
+            do { 
+                pos = random.NextInt(capacity); 
+                hex = hices[pos];
+                distance = Hex.DistanceFromCenter(hex.q, hex.r);
+                for(int i = 0; i < currentVillageAmount; i++)
+                {
+                    villageDistance = math.min(villageDistance, Hex.Distance(hex.q, hex.r, villages[i].origin.q, villages[i].origin.r));
+                }
+                tries++;
+            } while ((distance > (size * 0.85) || (hex.h < 0.25 || hex.h > 0.75) && (hex.m < 0.25 || hex.m > 0.75) || villageDistance < 80) && tries < 50000);
+            return tries >= 50000 ? -1 : pos;
         }
     }
 }

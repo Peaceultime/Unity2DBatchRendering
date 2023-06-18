@@ -165,10 +165,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   options:
-    size: 256
-    seed: 1
+    size: 516
+    seed: 2
     terraces: 32
-    dispersion: 16
+    dispersion: 64
   biome: {fileID: 11400000, guid: 7ddbece49ba4a9f4c8f8c80cb04f54af, type: 2}
   material: {fileID: 2100000, guid: 2a8301767ca43134f942efe8b3647dee, type: 2}
   mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}

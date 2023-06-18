@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654531a26a05b8945a82533f09457b80, type: 3}
   m_Name: Forest
   m_EditorClassIdentifier: 
-  color: {r: 0.4156863, g: 0.74509805, b: 0.18823531, a: 1}
   spriteIndex: 3
   decoSpriteIndex: 0
+  acceptStructures: 1
