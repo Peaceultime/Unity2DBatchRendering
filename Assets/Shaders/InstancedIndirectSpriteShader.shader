@@ -1,5 +1,9 @@
-Shader "Custom/Sprite/Indirect Instanced"
+Shader"Custom/Sprite/Indirect Instanced"
 {
+    Properties
+    {
+        _FadeProgress("Fade Progress", Float) = 0
+    }
     SubShader
     {
         Tags
@@ -28,12 +32,13 @@ Shader "Custom/Sprite/Indirect Instanced"
             UNITY_DECLARE_TEX2DARRAY(_MainTex);
             float4 _MainTint;
             float4 _MainPos;
+            float _FadeProgress;
 
             struct Sprite
             {
                 float2 position;
                 int index;
-                float rotation;
+                int distance;
             };
 
             StructuredBuffer<Sprite> _SpriteBlock;
@@ -66,6 +71,11 @@ Shader "Custom/Sprite/Indirect Instanced"
                 return _f;
             }
 
+            float unlerp(float x, float a, float b)
+            {
+                return (x - a) / (b - a);
+            }
+
             fixed4 frag(f _f) : SV_Target
             {
                 InitIndirectDrawArgs(0);
@@ -78,6 +88,8 @@ Shader "Custom/Sprite/Indirect Instanced"
 
                 float3 uv = float3(_f.uv, sprite.index);
                 fixed4 col = UNITY_SAMPLE_TEX2DARRAY(_MainTex, uv) * _MainTint;
+                float fade = clamp(unlerp(sprite.distance - _FadeProgress, -3, 1), 0, 1);
+                col.a = clamp(1 - fade, 0, col.a);
                 col.rgb *= col.a;
 
                 return col;

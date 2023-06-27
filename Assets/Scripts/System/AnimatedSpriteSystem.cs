@@ -18,23 +18,8 @@ public static class AnimatingSystem
             sprites = sprites,
             animations = animations,
             time = UnityEngine.Time.deltaTime,
-        }).ScheduleParallel(sprites.Length, MapGenerator.GRANULARITY, default);
+        }).ScheduleParallel(sprites.Length, Constants.GRANULARITY, default);
 	}
-
-    /*protected override void OnCreate()
-	{
-		query = GetEntityQuery(ComponentType.ReadWrite<Sprite>(), ComponentType.ReadWrite<AnimatedSprite>(), ComponentType.ReadWrite<Spritesheet>(), ComponentType.ChunkComponent<ChunkAABB>());
-	}
-
-	protected override void OnUpdate()
-	{
-		new AnimatingSystemJob
-		{
-			spriteAccessor = GetComponentTypeHandle<Sprite>(),
-			animatedSpriteAccessor = GetComponentTypeHandle<AnimatedSprite>(),
-			timeData = Time,
-		}.ScheduleParallel(query, 8).Complete();
-	}*/
 
     [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true, FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low, OptimizeFor = OptimizeFor.Performance)]
     private struct AnimatorJob : IJobFor

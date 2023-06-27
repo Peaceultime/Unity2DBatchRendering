@@ -4,7 +4,7 @@ using UnityEngine;
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
 public struct Biome
 {
-	public NativeArray<Noiser> noisers;
+	public NoiseSampler sampler;
 	public NativeArray<Tile> tiles;
 	[HideInInspector] public int width;
 	[HideInInspector] public int height;

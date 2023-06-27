@@ -165,13 +165,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   options:
-    size: 516
+    size: 256
     seed: 2
     terraces: 32
-    dispersion: 64
-  biome: {fileID: 11400000, guid: 7ddbece49ba4a9f4c8f8c80cb04f54af, type: 2}
-  material: {fileID: 2100000, guid: 2a8301767ca43134f942efe8b3647dee, type: 2}
-  mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+    dispersion: 32
+  biome: {fileID: 11400000, guid: 640a612371c725642a98cb5c34ada86d, type: 2}
+  mat: {fileID: 2100000, guid: 2a8301767ca43134f942efe8b3647dee, type: 2}
+  fadeSpeed: 30
   inputConfig: {fileID: -944628639613478452, guid: 1f8e3a4e4dd58d74b94413c3e9813a94, type: 3}
 --- !u!1 &1946037381
 GameObject:

@@ -19,7 +19,7 @@ public class BiomeSO : ScriptableObject
             native_tiles[i] = so.tiles[i];
         return new Biome
         {
-            noisers = new NativeArray<Noiser>(so.noisers, Allocator.Persistent),
+            sampler = new NoiseSampler { noisers = new NativeArray<Noiser>(so.noisers, Allocator.Persistent) },
             tiles = native_tiles,
             diffusionMap = TextureToInt(so.diffusionMap),
             width = so.diffusionMap.width,

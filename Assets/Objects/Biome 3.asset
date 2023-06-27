@@ -10,21 +10,36 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e874e51d3aa7da141be6bc576ee12f75, type: 3}
-  m_Name: Biome 2
+  m_Name: Biome 3
   m_EditorClassIdentifier: 
   noisers:
-  - noise_type: 0
-    noise_shape: 1
+  - type: 0
+    shape: 1
     active: 1
-    amplitude: -0.85
-    frequency: 0.003901
-    addition: 0.88
-  - noise_type: 1
-    noise_shape: 0
+    amplitude: -0.7
+    frequency: 0.002
+    addition: 0.7
+    clamp:
+      x: -1
+      y: 1
+  - type: 0
+    shape: 0
     active: 1
-    amplitude: -0.4
-    frequency: 0.0656
-    addition: 0.08
+    amplitude: 0.19
+    frequency: 0.04
+    addition: -0.1
+    clamp:
+      x: -1
+      y: 1
+  - type: 0
+    shape: 1
+    active: 1
+    amplitude: 0.35
+    frequency: 0.0094
+    addition: -0.1
+    clamp:
+      x: -1
+      y: 1
   tiles:
   - {fileID: 11400000, guid: 27a9c938171afc44d9b16e7087d0859b, type: 2}
   - {fileID: 11400000, guid: d547e46a467cbe5498fe3b6fe3a28768, type: 2}

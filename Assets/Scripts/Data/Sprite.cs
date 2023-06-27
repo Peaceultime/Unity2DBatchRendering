@@ -10,9 +10,9 @@ public enum Layer : int { BASE = 2, DECO = 1, OUTLINE = 0 };
 [StructLayout(LayoutKind.Sequential)]
 public struct Sprite
 {
-    public float2 pos; //X = X, Y = Y, Z = -Y / 1000 + layer for sorting purpose
+    public float2 pos;
     public int index;
-    public float opacity;
+    public int distance;
 
 #if UNITY_EDITOR
     public override string ToString()

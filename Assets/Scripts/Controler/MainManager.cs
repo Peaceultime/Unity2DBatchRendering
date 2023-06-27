@@ -1,8 +1,4 @@
-using System.Collections;
-using TMPro;
-using Unity.Collections;
 using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,14 +6,11 @@ public class MainManager : MonoBehaviour
 {
     public MapOptions options;
     public BiomeSO biome;
-    public Material material;
+    public Material mat;
 
-    public Mesh mesh;
+    public float fadeSpeed;
 
     public InputActionAsset inputConfig;
-
-    private int oldSize;
-    private int oldDispersion;
 
 #if UNITY_EDITOR
     [HideInInspector] private bool initialized;
@@ -32,17 +25,14 @@ public class MainManager : MonoBehaviour
         }
         catch { }
 
-        Renderer.Init(mesh, material);
+        Renderer.Init(mat);
 
 #if UNITY_EDITOR
         biome.manager = this;
 #endif
 
-        oldSize = options.size;
-        oldDispersion = options.dispersion;
-
         options.biome = biome;
-        MapManager.CreateMap(options, material, ref biome.atlases);
+        MapManager.CreateMap(options, ref biome.atlases);
 
 #if UNITY_EDITOR
         initialized = true;
@@ -61,13 +51,13 @@ public class MainManager : MonoBehaviour
 #endif
         try
         {
-            options.biome.noisers.Dispose();
+            options.biome.sampler.Dispose();
             options.biome.diffusionMap.Dispose();
             options.biome.tiles.Dispose();
         } catch(System.Exception e) { Debug.LogException(e); }
 
+        MapManager.Dispose();
         Renderer.Dispose();
-        MapGenerator.ClearMap();
     }
 
 #if UNITY_EDITOR
@@ -75,18 +65,8 @@ public class MainManager : MonoBehaviour
     {
         if (Application.isPlaying && initialized)
         {
-            if(oldSize != options.size || oldDispersion != options.dispersion)
-            {
-                OnDisable();
-                OnEnable();
-            }
-            else
-            {
-                options.biome = biome;
-                MapManager.UpdateMap(options);
-            }
-            oldSize = options.size;
-            oldDispersion = options.dispersion;
+            OnDisable();
+            OnEnable();
         }
     }
 #endif
