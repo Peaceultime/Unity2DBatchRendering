@@ -1,4 +1,3 @@
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,8 +6,6 @@ public class MainManager : MonoBehaviour
     public MapOptions options;
     public BiomeSO biome;
     public Material mat;
-
-    public float fadeSpeed;
 
     public InputActionAsset inputConfig;
 
@@ -33,6 +30,8 @@ public class MainManager : MonoBehaviour
 
         options.biome = biome;
         MapManager.CreateMap(options, ref biome.atlases);
+
+        //GraphicsBuffer buffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.LockBufferForWrite, HexSystem.capacity, sizeof(bool) * 2);
 
 #if UNITY_EDITOR
         initialized = true;

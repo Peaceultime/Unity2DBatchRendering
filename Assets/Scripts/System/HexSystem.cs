@@ -179,6 +179,7 @@ public static class HexSystem
 [StructLayout(LayoutKind.Sequential)]
 public struct Hex
 {
+    public int idx;
     public int q;
     public int r;
     public float h, m;

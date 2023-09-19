@@ -1,5 +1,3 @@
-using Unity.Collections;
-using UnityEngine.Rendering;
 using UnityEngine;
 using Unity.Mathematics;
 
@@ -22,8 +20,11 @@ public static class Renderer
 
     public static void Init(Material mat = null, Camera camera = null)
     {
-        var shader = Shader.Find("Custom/Sprite/Indirect Instanced");
-        mat ??= new Material(shader);
+        if(mat == null)
+        {
+            var shader = Shader.Find("Custom/Sprite/Indirect Instanced");
+            mat = new Material(shader);
+        }
         mat.enableInstancing = true;
 
         uvBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, uvs.Length, sizeof(float) * 2);
